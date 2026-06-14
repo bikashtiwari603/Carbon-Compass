@@ -2,7 +2,38 @@
 
 > **Navigate Towards a Greener Future**
 
+[![Python](https://img.shields.io/badge/Python-3.12-blue?logo=python)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-green?logo=fastapi)](https://fastapi.tiangolo.com)
+[![Gemini](https://img.shields.io/badge/Google%20Gemini-AI-orange?logo=google)](https://ai.google.dev)
+[![Cloud Run](https://img.shields.io/badge/Google%20Cloud%20Run-Deployed-4285F4?logo=googlecloud)](https://cloud.google.com/run)
+[![Tests](https://img.shields.io/badge/Tests-79%20Passing-brightgreen?logo=pytest)](https://github.com/bikashtiwari603/Carbon-Compass)
+[![License](https://img.shields.io/badge/License-Non--Commercial-lightgrey)](LICENSE)
+
 AI-powered carbon footprint tracking web application built with FastAPI, Google Gemini AI, and a premium dark-theme single-page frontend. Designed for the Indian market with global applicability.
+
+**Topics:** `python` `fastapi` `google-gemini` `carbon-footprint` `climate-action` `google-cloud-run` `sustainability` `india` `ai-powered` `gamification`
+
+---
+
+## 🌐 Live Demo
+
+> ### **[https://carboncompass-rlzbi2esba-uc.a.run.app/](https://carboncompass-rlzbi2esba-uc.a.run.app/)**
+
+🚀 Fully deployed on Google Cloud Run · No sign-up required · Works on mobile
+
+---
+
+## 📸 Screenshots
+
+> | Home Dashboard | Activity Tracker | Carbon Quiz | Badges System |
+> |---|---|---|---|
+> | Hero stats, rotating facts, feature cards with glassmorphism | 5 categories, 20+ activities, live CO₂ meter | 30 expert questions with timer and scoring | 9 earnable badges with progress tracking |
+
+The interface features:
+- 🌙 **Dark / Light mode** with smooth circular reveal transition
+- 🍃 **Leaf particle cursor** — leaves trail your mouse movements
+- 🏕️ **Forest-themed winding roadmap** with animated path and floating leaf
+- 🔮 **Glassmorphism 3D cards** that tilt on hover with neon glow effects
 
 ---
 
@@ -16,6 +47,7 @@ AI-powered carbon footprint tracking web application built with FastAPI, Google 
 - [Environment Variables](#environment-variables)
 - [API Reference](#api-reference)
 - [Testing](#testing)
+- [Development Journey](#development-journey)
 - [Deployment to Google Cloud Run](#deployment-to-google-cloud-run)
 - [Accessibility](#accessibility)
 - [Security](#security)
@@ -64,15 +96,18 @@ AI-powered carbon footprint tracking web application built with FastAPI, Google 
 ## 📁 Project Structure
 
 ```
-carboncompass/
+Carbon-Compass/
 ├── main.py              # FastAPI application — all endpoints, middleware, AI
 ├── requirements.txt     # Python dependencies
-├── Dockerfile           # Cloud Run deployment container
+├── Dockerfile           # Cloud Run deployment container (non-root user)
+├── .dockerignore        # Excludes dev files from Docker image
 ├── .env.example         # Environment variable template
+├── .gitignore           # Ignores secrets, caches, large assets
 ├── README.md            # This file
+├── CONTRIBUTING.md      # Contribution guidelines
 ├── pytest.ini           # Test configuration
 ├── conftest.py          # Shared test fixtures & Gemini mock
-├── test_main.py         # 70+ comprehensive tests
+├── test_main.py         # 79 comprehensive tests
 └── static/
     └── index.html       # Complete SPA — all CSS & JS inline
 ```
@@ -81,11 +116,11 @@ carboncompass/
 
 ## 🚀 Quick Start
 
-### 1. Clone and set up environment
+### 1. Clone the repository
 
 ```bash
-git clone <your-repo-url>
-cd carboncompass
+git clone https://github.com/bikashtiwari603/Carbon-Compass.git
+cd Carbon-Compass
 cp .env.example .env
 # Edit .env and add your GEMINI_API_KEY
 ```
@@ -137,7 +172,7 @@ Open: http://localhost:8080
 |---|---|---|
 | `GET` | `/` | Serve frontend SPA |
 | `GET` | `/health` | Health check (Cloud Run) |
-| `GET` | `/api/v1/about` | App metadata |
+| `GET` | `/api/v1/about` | App metadata + live URL + GitHub |
 | `GET` | `/api/v1/stats` | Global usage statistics |
 
 ### AI & User Endpoints
@@ -191,9 +226,7 @@ pytest -v -k "TestIntegration"    # Full user journey tests
 pytest -v -k "TestPerformance"    # Response time tests
 ```
 
-### Test Coverage
-
-The test suite covers:
+### Test Coverage — 79 Tests, All Passing ✅
 
 - ✅ **Health & Basic** — 6 tests
 - ✅ **Security Headers** — 8 tests (X-Content-Type, X-Frame-Options, HSTS, UUID request IDs, CORS)
@@ -212,13 +245,34 @@ The test suite covers:
 
 ---
 
+## 🗓️ Development Journey
+
+The development of CarbonCompass followed an iterative, test-driven approach:
+
+```
+feat: initial project setup and FastAPI backend structure
+feat: added Google Gemini AI chat integration with session history
+feat: implemented activity tracker with 20+ CO2 calculations
+feat: added gamification system with 9 badges and points progression
+feat: integrated Google Cloud Logging and Analytics 4
+feat: added comprehensive test suite with 79+ automated tests
+feat: security hardening — CSP, HSTS, rate limiting, input sanitisation
+feat: performance optimisation — in-memory caching, GZip compression
+feat: premium UI with glassmorphism cards, forest roadmap, leaf cursor
+feat: dark/light theme with circular reveal transition animation
+feat: WCAG AA accessibility — full ARIA roles, keyboard navigation
+feat: final deployment to Google Cloud Run with Secret Manager
+docs: improve README, fix stat animations, add badges and screenshots
+```
+
+---
+
 ## 🐳 Deployment to Google Cloud Run
 
 ### Prerequisites
 
 ```bash
 # Install Google Cloud SDK
-# Authenticate
 gcloud auth login
 gcloud config set project YOUR_PROJECT_ID
 ```
@@ -229,24 +283,29 @@ gcloud config set project YOUR_PROJECT_ID
 echo -n "your_gemini_api_key" | gcloud secrets create gemini-api-key --data-file=-
 ```
 
-### Build and Deploy
+### Deploy from Source (Recommended)
 
 ```bash
-# Build container
-gcloud builds submit --tag gcr.io/YOUR_PROJECT_ID/carboncompass
-
-# Deploy to Cloud Run
 gcloud run deploy carboncompass \
-  --image gcr.io/YOUR_PROJECT_ID/carboncompass \
-  --platform managed \
+  --source . \
   --region us-central1 \
   --allow-unauthenticated \
   --set-secrets GEMINI_API_KEY=gemini-api-key:latest \
   --memory 512Mi \
   --cpu 1 \
   --min-instances 0 \
-  --max-instances 10 \
-  --port 8080
+  --max-instances 10
+```
+
+### Required IAM Roles for Compute Service Account
+
+```bash
+PROJECT_NUMBER=YOUR_PROJECT_NUMBER
+SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+gcloud projects add-iam-policy-binding YOUR_PROJECT_ID --member=serviceAccount:${SA} --role=roles/storage.objectViewer
+gcloud projects add-iam-policy-binding YOUR_PROJECT_ID --member=serviceAccount:${SA} --role=roles/artifactregistry.writer
+gcloud projects add-iam-policy-binding YOUR_PROJECT_ID --member=serviceAccount:${SA} --role=roles/logging.logWriter
+gcloud projects add-iam-policy-binding YOUR_PROJECT_ID --member=serviceAccount:${SA} --role=roles/secretmanager.secretAccessor
 ```
 
 ### Enable Cloud Logging
@@ -282,6 +341,8 @@ Cloud Logging is automatically configured when deployed to Cloud Run with a serv
 | Session ID validation | Regex `[a-zA-Z0-9_-]+` only |
 | Request tracing | UUID `X-Request-ID` on every response |
 | API key validation | Startup check for placeholder/short keys |
+| Secret management | Gemini API key stored in GCP Secret Manager — never in code |
+| Container security | Runs as non-root `appuser` inside Docker |
 | CORS | Configured via `CORSMiddleware` |
 
 ---
@@ -307,10 +368,16 @@ Cloud Logging is automatically configured when deployed to Cloud Run with a serv
 
 ---
 
+## 🤝 Contributing
+
+We welcome contributions! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+---
+
 ## 📄 License
 
 Non-commercial. Built for educational and awareness purposes.
 
 ---
 
-*Built with 💚 for a greener future · Powered by Google Gemini AI*
+*Built with 💚 for a greener future · Powered by Google Gemini AI · Deployed on Google Cloud Run*
