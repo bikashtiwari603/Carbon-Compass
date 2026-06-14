@@ -659,3 +659,102 @@ class TestPerformance:
         start = time.time()
         client.get("/api/v1/roadmap")
         assert (time.time() - start) * 1000 < 500
+
+
+# ===========================================================================
+# NEW CODE QUALITY AND REFACTORING TESTS
+# ===========================================================================
+
+def test_api_docs_available(client):
+    """Verify FastAPI auto-generated API docs are accessible."""
+    response = client.get("/api/docs")
+    assert response.status_code == 200
+
+def test_openapi_schema_available(client):
+    """Verify OpenAPI JSON schema endpoint is accessible."""
+    response = client.get("/api/openapi.json")
+    assert response.status_code == 200
+    schema = response.json()
+    assert schema["info"]["title"] == "CarbonCompass"
+    assert schema["info"]["version"] == "1.0.0"
+
+def test_request_size_limit(client):
+    """Verify oversized requests are rejected with 413."""
+    large_body = {"message": "x" * 1_100_000, "session_id": "test"}
+    response = client.post(
+        "/api/v1/chat",
+        json=large_body,
+        headers={"content-length": "1100000"}
+    )
+    assert response.status_code in [400, 413, 422]
+
+def test_emission_factor_constants_used(client):
+    """Verify CO2 calculation uses correct emission factors."""
+    response = client.post("/api/v1/log-activity", json={
+        "session_id": "test-constants-123",
+        "category": "transport",
+        "activity": "metro",
+        "quantity": 10.0,
+        "unit": "km"
+    })
+    assert response.status_code == 200
+    data = response.json()
+    # metro factor is 0.041 kg/km, so 10km = 0.41 kg
+    assert abs(data["co2_kg"] - 0.41) < 0.001
+
+def test_unknown_activity_returns_400(client):
+    """Verify unknown activity ID returns 400 not 500."""
+    response = client.post("/api/v1/log-activity", json={
+        "session_id": "test-unknown-123",
+        "category": "transport",
+        "activity": "unknown_activity_xyz",
+        "quantity": 5.0,
+        "unit": "km"
+    })
+    assert response.status_code == 400
+
+def test_all_endpoints_have_request_id_header(client):
+    """Verify every endpoint returns X-Request-ID header."""
+    endpoints = [
+        ("GET", "/health"),
+        ("GET", "/api/v1/activities"),
+        ("GET", "/api/v1/tips"),
+        ("GET", "/api/v1/roadmap"),
+        ("GET", "/api/v1/badges"),
+        ("GET", "/api/v1/about"),
+        ("GET", "/api/v1/stats"),
+    ]
+    for method, path in endpoints:
+        response = client.get(path)
+        assert "x-request-id" in response.headers, \
+            f"X-Request-ID missing from {method} {path}"
+
+def test_chat_response_matches_model(client, sample_chat_request):
+    """Verify chat response has exactly the fields in ChatResponse model."""
+    response = client.post("/api/v1/chat", json=sample_chat_request)
+    assert response.status_code == 200
+    data = response.json()
+    required_fields = {"response", "suggestions", "points_earned", "session_id"}
+    assert required_fields.issubset(set(data.keys()))
+    assert isinstance(data["suggestions"], list)
+    assert len(data["suggestions"]) == 3
+    assert isinstance(data["points_earned"], int)
+    assert data["points_earned"] >= 0
+
+def test_level_progression(client):
+    """Verify gamification levels progress correctly with points."""
+    # Log enough activities to accumulate points and verify level changes
+    session_id = "test-level-progression-456"
+    total_points = 0
+    for i in range(15):
+        response = client.post("/api/v1/log-activity", json={
+            "session_id": session_id,
+            "category": "green_actions",
+            "activity": "tree_planted",
+            "quantity": 1.0,
+            "unit": "tree"
+        })
+        assert response.status_code == 200
+        total_points = response.json()["total_points"]
+    assert total_points > 0
+

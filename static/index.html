@@ -2467,31 +2467,13 @@ async function apiFetch(path, options={}) {
 // HOME TAB
 // ===================================================================
 function initHeroStats() {
-  // Reset all to 0 first so animation always plays from 0 → target
-  ['hero-stat-1','hero-stat-2','hero-stat-3'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = '0.0';
-  });
   setTimeout(() => {
     const targets = [1.9, 4.8, 2.0];
     ['hero-stat-1','hero-stat-2','hero-stat-3'].forEach((id,i) => {
       const el = document.getElementById(id);
-      if (el) {
-        el.textContent = '0.0'; // ensure fresh start
-        const target = targets[i];
-        const duration = 2000;
-        const startTime = performance.now();
-        function update(now) {
-          const progress = Math.min((now - startTime) / duration, 1);
-          const ease = 1 - Math.pow(1 - progress, 3);
-          el.textContent = (target * ease).toFixed(1);
-          if (progress < 1) requestAnimationFrame(update);
-          else el.textContent = target.toFixed(1);
-        }
-        requestAnimationFrame(update);
-      }
+      if (el) animateCounter(el, targets[i], 1, 2000);
     });
-  }, 800);
+  }, 600);
 }
 
 const FACTS = [
