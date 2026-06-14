@@ -34,7 +34,29 @@ if not GEMINI_API_KEY or GEMINI_API_KEY == "your_gemini_api_key_here" or len(GEM
 import google.generativeai as genai  # noqa: E402
 
 genai.configure(api_key=GEMINI_API_KEY)
-gemini_model = genai.GenerativeModel("gemini-1.5-flash")
+
+# Try models in order of preference — newest first
+_MODEL_PREFERENCE = [
+    "gemini-2.0-flash",
+    "gemini-1.5-flash-latest",
+    "gemini-1.5-flash",
+    "gemini-pro",
+]
+
+gemini_model = None
+_selected_model = "gemini-2.0-flash"
+try:
+    gemini_model = genai.GenerativeModel("gemini-2.0-flash")
+    _selected_model = "gemini-2.0-flash"
+except Exception:
+    try:
+        gemini_model = genai.GenerativeModel("gemini-1.5-flash-latest")
+        _selected_model = "gemini-1.5-flash-latest"
+    except Exception:
+        gemini_model = genai.GenerativeModel("gemini-pro")
+        _selected_model = "gemini-pro"
+
+
 
 # ---------------------------------------------------------------------------
 # Cloud Logging (falls back to standard logging)
@@ -607,8 +629,25 @@ async def chat(req: ChatRequest, request: Request):
         response = gemini_model.generate_content(full_prompt)
         ai_text = response.text
     except Exception as e:
+        error_str = str(e)
         logger.error(f"Gemini API error: {e}")
-        ai_text = "I'm having trouble connecting to my AI brain right now. 🌱 Please try again in a moment!"
+        # If model is not found (404), try fallback models at runtime
+        if "404" in error_str or "not found" in error_str.lower():
+            ai_text = None
+            for fallback_model_name in ["gemini-1.5-flash-latest", "gemini-1.5-flash", "gemini-pro"]:
+                try:
+                    fallback = genai.GenerativeModel(fallback_model_name)
+                    resp = fallback.generate_content(full_prompt)
+                    ai_text = resp.text
+                    logger.info(f"Fallback model succeeded: {fallback_model_name}")
+                    break
+                except Exception as fe:
+                    logger.error(f"Fallback {fallback_model_name} also failed: {fe}")
+            if not ai_text:
+                ai_text = "I'm having trouble connecting to my AI brain right now. 🌱 Please try again in a moment!"
+        else:
+            ai_text = "I'm having trouble connecting to my AI brain right now. 🌱 Please try again in a moment!"
+
 
     # Update history (max 20 messages)
     history.append({"role": "user", "content": message})
