@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.venv/
+env/
+venv/
+ENV/
+
+# Environment variables
+.env
+
+# Antigravity/Gemini agent metadata & artifacts
+.gemini/
+artifacts/
+.system_generated/
+*.log
+*.webp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Reference design assets
+neon-glass-3d-cards-ui-lab/
+neon-glass-3d-cards-ui-lab.zip

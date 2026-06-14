@@ -1,0 +1,45 @@
+# Git
+.git/
+.github/
+
+# Local Environment & Secrets
+.env
+.env.*
+*.local
+secrets/
+
+# Python Cache & Build Artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.venv/
+env/
+venv/
+ENV/
+build/
+dist/
+*.egg-info/
+
+# Testing Files (unnecessary in production container)
+test_main.py
+conftest.py
+pytest.ini
+.coverage
+htmlcov/
+
+# Antigravity/Gemini agent metadata & artifacts
+.gemini/
+artifacts/
+.system_generated/
+*.log
+*.webp
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Large Design Reference Files
+neon-glass-3d-cards-ui-lab/
+neon-glass-3d-cards-ui-lab.zip
