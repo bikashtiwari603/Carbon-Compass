@@ -3,11 +3,16 @@ Comprehensive test suite for CarbonCompass API.
 Covers health, security, chat, activities, dashboard, badges, tips,
 roadmap, profile, weekly reports, rate limiting, integration, and performance.
 """
+
 import time
 import uuid
 
 import pytest
 
+from app.calculator import calculate_co2
+from app.config import get_settings
+from app.gamification import award_points, get_user_level
+from app.models import ActivityLogResponse, ChatRequest
 
 # ===========================================================================
 # HEALTH AND BASIC TESTS
@@ -55,7 +60,13 @@ class TestHealthAndBasic:
         resp = client.get("/api/v1/stats")
         assert resp.status_code == 200
         data = resp.json()
-        for field in ("total_sessions", "total_messages", "total_activities_logged", "uptime_seconds", "cache_hits"):
+        for field in (
+            "total_sessions",
+            "total_messages",
+            "total_activities_logged",
+            "uptime_seconds",
+            "cache_hits",
+        ):
             assert field in data
             assert isinstance(data[field], (int, float))
 
@@ -111,7 +122,10 @@ class TestSecurityHeaders:
         """OPTIONS request returns CORS headers."""
         resp = client.options(
             "/api/v1/chat",
-            headers={"Origin": "http://example.com", "Access-Control-Request-Method": "POST"},
+            headers={
+                "Origin": "http://example.com",
+                "Access-Control-Request-Method": "POST",
+            },
         )
         assert "access-control-allow-origin" in resp.headers
 
@@ -143,12 +157,17 @@ class TestChat:
 
     def test_chat_empty_message_returns_422(self, client, sample_session_id):
         """Empty string message returns 422 or 400."""
-        resp = client.post("/api/v1/chat", json={"message": "", "session_id": sample_session_id})
+        resp = client.post(
+            "/api/v1/chat", json={"message": "", "session_id": sample_session_id}
+        )
         assert resp.status_code in (400, 422)
 
     def test_chat_message_too_long_returns_422(self, client, sample_session_id):
         """2001-character message returns 422 or 400."""
-        resp = client.post("/api/v1/chat", json={"message": "x" * 2001, "session_id": sample_session_id})
+        resp = client.post(
+            "/api/v1/chat",
+            json={"message": "x" * 2001, "session_id": sample_session_id},
+        )
         assert resp.status_code in (400, 422)
 
     def test_chat_missing_session_id_returns_422(self, client):
@@ -158,7 +177,10 @@ class TestChat:
 
     def test_chat_html_injection_sanitized(self, client, sample_session_id):
         """Message with script tags is sanitized before processing."""
-        payload = {"message": "<script>alert(1)</script>How to save CO2?", "session_id": sample_session_id}
+        payload = {
+            "message": "<script>alert(1)</script>How to save CO2?",
+            "session_id": sample_session_id,
+        }
         resp = client.post("/api/v1/chat", json=payload)
         assert resp.status_code == 200
 
@@ -170,19 +192,30 @@ class TestChat:
 
     def test_chat_unicode_hindi_works(self, client, sample_session_id):
         """Hindi text message returns 200."""
-        payload = {"message": "मेरा कार्बन फुटप्रिंट कैसे कम करें?", "session_id": sample_session_id}
+        payload = {
+            "message": "मेरा कार्बन फुटप्रिंट कैसे कम करें?",
+            "session_id": sample_session_id,
+        }
         resp = client.post("/api/v1/chat", json=payload)
         assert resp.status_code == 200
 
     def test_chat_with_mode_quiz(self, client, sample_session_id):
         """Mode quiz returns 200."""
-        payload = {"message": "Start a quiz", "session_id": sample_session_id, "mode": "quiz"}
+        payload = {
+            "message": "Start a quiz",
+            "session_id": sample_session_id,
+            "mode": "quiz",
+        }
         resp = client.post("/api/v1/chat", json=payload)
         assert resp.status_code == 200
 
     def test_chat_with_mode_calculator(self, client, sample_session_id):
         """Mode calculator returns 200."""
-        payload = {"message": "Calculate footprint", "session_id": sample_session_id, "mode": "calculator"}
+        payload = {
+            "message": "Calculate footprint",
+            "session_id": sample_session_id,
+            "mode": "calculator",
+        }
         resp = client.post("/api/v1/chat", json=payload)
         assert resp.status_code == 200
 
@@ -190,13 +223,19 @@ class TestChat:
         """Send 3 messages with the same session_id; all return 200."""
         sid = "history-test-session"
         for i in range(3):
-            resp = client.post("/api/v1/chat", json={"message": f"Message {i}", "session_id": sid})
+            resp = client.post(
+                "/api/v1/chat", json={"message": f"Message {i}", "session_id": sid}
+            )
             assert resp.status_code == 200
 
     def test_chat_different_sessions_independent(self, client):
         """Two different session IDs maintain independent histories."""
-        r1 = client.post("/api/v1/chat", json={"message": "Hello", "session_id": "session-A"})
-        r2 = client.post("/api/v1/chat", json={"message": "Hello", "session_id": "session-B"})
+        r1 = client.post(
+            "/api/v1/chat", json={"message": "Hello", "session_id": "session-A"}
+        )
+        r2 = client.post(
+            "/api/v1/chat", json={"message": "Hello", "session_id": "session-B"}
+        )
         assert r1.status_code == 200
         assert r2.status_code == 200
         # Both succeed independently
@@ -314,19 +353,37 @@ class TestLogActivity:
 
     def test_log_activity_co2_calculation(self, client):
         """Log metro 10km expects co2_kg approximately 0.41."""
-        payload = {"session_id": "calc-test-001", "category": "transport", "activity": "metro", "quantity": 10.0, "unit": "km"}
+        payload = {
+            "session_id": "calc-test-001",
+            "category": "transport",
+            "activity": "metro",
+            "quantity": 10.0,
+            "unit": "km",
+        }
         data = client.post("/api/v1/log-activity", json=payload).json()
         assert abs(data["co2_kg"] - 0.41) < 0.01
 
     def test_log_activity_green_action_negative_co2(self, client):
         """Log tree_planted expects negative co2_kg."""
-        payload = {"session_id": "green-test-001", "category": "green_actions", "activity": "tree_planted", "quantity": 1.0, "unit": "tree"}
+        payload = {
+            "session_id": "green-test-001",
+            "category": "green_actions",
+            "activity": "tree_planted",
+            "quantity": 1.0,
+            "unit": "tree",
+        }
         data = client.post("/api/v1/log-activity", json=payload).json()
         assert data["co2_kg"] < 0
 
     def test_log_activity_invalid_session(self, client):
         """Empty session_id returns 422."""
-        payload = {"session_id": "", "category": "transport", "activity": "metro", "quantity": 10.0, "unit": "km"}
+        payload = {
+            "session_id": "",
+            "category": "transport",
+            "activity": "metro",
+            "quantity": 10.0,
+            "unit": "km",
+        }
         resp = client.post("/api/v1/log-activity", json=payload)
         assert resp.status_code in (400, 422)
 
@@ -335,7 +392,13 @@ class TestLogActivity:
         sid = "accum-test-001"
         totals = []
         for _ in range(3):
-            payload = {"session_id": sid, "category": "transport", "activity": "bus", "quantity": 5.0, "unit": "km"}
+            payload = {
+                "session_id": sid,
+                "category": "transport",
+                "activity": "bus",
+                "quantity": 5.0,
+                "unit": "km",
+            }
             data = client.post("/api/v1/log-activity", json=payload).json()
             totals.append(data["total_points"])
         # Each subsequent total should be >= previous
@@ -362,9 +425,16 @@ class TestDashboard:
     def test_dashboard_after_logging(self, client):
         """Log activity then get dashboard shows that activity in totals."""
         sid = "dash-test-001"
-        client.post("/api/v1/log-activity", json={
-            "session_id": sid, "category": "transport", "activity": "car_petrol", "quantity": 100.0, "unit": "km",
-        })
+        client.post(
+            "/api/v1/log-activity",
+            json={
+                "session_id": sid,
+                "category": "transport",
+                "activity": "car_petrol",
+                "quantity": 100.0,
+                "unit": "km",
+            },
+        )
         data = client.get(f"/api/v1/dashboard/{sid}").json()
         assert data["total_co2_kg"] > 0
         assert data["activities_count"] >= 1
@@ -372,15 +442,28 @@ class TestDashboard:
     def test_dashboard_has_all_fields(self, client):
         """Response has total_co2_kg, total_offset_kg, net_co2_kg, breakdown, daily_average."""
         data = client.get("/api/v1/dashboard/any-session").json()
-        for field in ("total_co2_kg", "total_offset_kg", "net_co2_kg", "breakdown", "daily_average"):
+        for field in (
+            "total_co2_kg",
+            "total_offset_kg",
+            "net_co2_kg",
+            "breakdown",
+            "daily_average",
+        ):
             assert field in data
 
     def test_dashboard_breakdown_by_category(self, client):
         """Breakdown dict has category keys after logging."""
         sid = "dash-cat-001"
-        client.post("/api/v1/log-activity", json={
-            "session_id": sid, "category": "food", "activity": "chicken", "quantity": 1.0, "unit": "kg",
-        })
+        client.post(
+            "/api/v1/log-activity",
+            json={
+                "session_id": sid,
+                "category": "food",
+                "activity": "chicken",
+                "quantity": 1.0,
+                "unit": "kg",
+            },
+        )
         data = client.get(f"/api/v1/dashboard/{sid}").json()
         assert isinstance(data["breakdown"], dict)
         assert "food" in data["breakdown"]
@@ -419,8 +502,17 @@ class TestBadges:
         """Every badge has id, name, description, points_required, icon, color."""
         data = client.get("/api/v1/badges").json()
         for badge in data:
-            for field in ("id", "name", "description", "points_required", "icon", "color"):
-                assert field in badge, f"Missing {field} in badge {badge.get('id', '?')}"
+            for field in (
+                "id",
+                "name",
+                "description",
+                "points_required",
+                "icon",
+                "color",
+            ):
+                assert (
+                    field in badge
+                ), f"Missing {field} in badge {badge.get('id', '?')}"
 
 
 # ===========================================================================
@@ -494,7 +586,15 @@ class TestRoadmap:
         """Every phase has phase, title, duration, description, color, actions, milestone."""
         data = client.get("/api/v1/roadmap").json()
         for phase in data["phases"]:
-            for field in ("phase", "title", "duration", "description", "color", "actions", "milestone"):
+            for field in (
+                "phase",
+                "title",
+                "duration",
+                "description",
+                "color",
+                "actions",
+                "milestone",
+            ):
                 assert field in phase
 
     def test_roadmap_cache(self, client):
@@ -514,25 +614,53 @@ class TestProfile:
 
     def test_profile_valid_request(self, client, sample_session_id):
         """POST /api/v1/profile with valid data returns 200."""
-        payload = {"session_id": sample_session_id, "country": "India", "diet": "vegetarian", "transport": "metro", "home_energy": "normal"}
+        payload = {
+            "session_id": sample_session_id,
+            "country": "India",
+            "diet": "vegetarian",
+            "transport": "metro",
+            "home_energy": "normal",
+        }
         resp = client.post("/api/v1/profile", json=payload)
         assert resp.status_code == 200
 
     def test_profile_returns_estimate(self, client, sample_session_id):
         """Response has estimated_annual_co2_tonnes as float."""
-        payload = {"session_id": sample_session_id, "country": "India", "diet": "vegetarian", "transport": "metro", "home_energy": "normal"}
+        payload = {
+            "session_id": sample_session_id,
+            "country": "India",
+            "diet": "vegetarian",
+            "transport": "metro",
+            "home_energy": "normal",
+        }
         data = client.post("/api/v1/profile", json=payload).json()
         assert isinstance(data["estimated_annual_co2_tonnes"], (int, float))
 
     def test_profile_vegan_lower_than_meat(self, client):
         """Vegan diet profile has lower CO2 than meat diet."""
-        vegan = client.post("/api/v1/profile", json={
-            "session_id": "vegan-test", "country": "India", "diet": "vegan", "transport": "metro", "home_energy": "solar",
-        }).json()
-        meat = client.post("/api/v1/profile", json={
-            "session_id": "meat-test", "country": "India", "diet": "meat", "transport": "car", "home_energy": "heavy_ac",
-        }).json()
-        assert vegan["estimated_annual_co2_tonnes"] < meat["estimated_annual_co2_tonnes"]
+        vegan = client.post(
+            "/api/v1/profile",
+            json={
+                "session_id": "vegan-test",
+                "country": "India",
+                "diet": "vegan",
+                "transport": "metro",
+                "home_energy": "solar",
+            },
+        ).json()
+        meat = client.post(
+            "/api/v1/profile",
+            json={
+                "session_id": "meat-test",
+                "country": "India",
+                "diet": "meat",
+                "transport": "car",
+                "home_energy": "heavy_ac",
+            },
+        ).json()
+        assert (
+            vegan["estimated_annual_co2_tonnes"] < meat["estimated_annual_co2_tonnes"]
+        )
 
 
 # ===========================================================================
@@ -568,9 +696,15 @@ class TestRateLimit:
         # Use a unique session to avoid collision with other tests
         sid = "ratelimit-test-unique-session"
         for i in range(10):
-            resp = client.post("/api/v1/chat", json={"message": f"Msg {i}", "session_id": sid})
-            assert resp.status_code == 200, f"Request {i+1} failed with {resp.status_code}"
-        resp = client.post("/api/v1/chat", json={"message": "Over limit", "session_id": sid})
+            resp = client.post(
+                "/api/v1/chat", json={"message": f"Msg {i}", "session_id": sid}
+            )
+            assert (
+                resp.status_code == 200
+            ), f"Request {i+1} failed with {resp.status_code}"
+        resp = client.post(
+            "/api/v1/chat", json={"message": "Over limit", "session_id": sid}
+        )
         assert resp.status_code == 429
 
     def test_rate_limit_has_retry_after(self, client):
@@ -578,7 +712,9 @@ class TestRateLimit:
         sid = "ratelimit-retry-test"
         for i in range(10):
             client.post("/api/v1/chat", json={"message": f"Msg {i}", "session_id": sid})
-        resp = client.post("/api/v1/chat", json={"message": "Over limit", "session_id": sid})
+        resp = client.post(
+            "/api/v1/chat", json={"message": "Over limit", "session_id": sid}
+        )
         assert resp.status_code == 429
         assert "Retry-After" in resp.headers
 
@@ -596,18 +732,45 @@ class TestIntegration:
         sid = "journey-test-001"
 
         # 1. Set profile
-        resp = client.post("/api/v1/profile", json={
-            "session_id": sid, "country": "India", "diet": "vegetarian", "transport": "metro", "home_energy": "normal",
-        })
+        resp = client.post(
+            "/api/v1/profile",
+            json={
+                "session_id": sid,
+                "country": "India",
+                "diet": "vegetarian",
+                "transport": "metro",
+                "home_energy": "normal",
+            },
+        )
         assert resp.status_code == 200
 
         # 2. Log 5 activities
         activities = [
-            {"category": "transport", "activity": "metro", "quantity": 15, "unit": "km"},
+            {
+                "category": "transport",
+                "activity": "metro",
+                "quantity": 15,
+                "unit": "km",
+            },
             {"category": "food", "activity": "vegetables", "quantity": 2, "unit": "kg"},
-            {"category": "home", "activity": "electricity", "quantity": 5, "unit": "kWh"},
-            {"category": "green_actions", "activity": "tree_planted", "quantity": 1, "unit": "tree"},
-            {"category": "green_actions", "activity": "recycled", "quantity": 3, "unit": "kg"},
+            {
+                "category": "home",
+                "activity": "electricity",
+                "quantity": 5,
+                "unit": "kWh",
+            },
+            {
+                "category": "green_actions",
+                "activity": "tree_planted",
+                "quantity": 1,
+                "unit": "tree",
+            },
+            {
+                "category": "green_actions",
+                "activity": "recycled",
+                "quantity": 3,
+                "unit": "kg",
+            },
         ]
         for act in activities:
             act["session_id"] = sid
@@ -627,9 +790,16 @@ class TestIntegration:
     def test_stats_increment(self, client):
         """Log activity and verify total_activities_logged in stats increments."""
         before = client.get("/api/v1/stats").json()["total_activities_logged"]
-        client.post("/api/v1/log-activity", json={
-            "session_id": "stats-test-001", "category": "food", "activity": "chicken", "quantity": 1, "unit": "kg",
-        })
+        client.post(
+            "/api/v1/log-activity",
+            json={
+                "session_id": "stats-test-001",
+                "category": "food",
+                "activity": "chicken",
+                "quantity": 1,
+                "unit": "kg",
+            },
+        )
         after = client.get("/api/v1/stats").json()["total_activities_logged"]
         assert after > before
 
@@ -665,10 +835,12 @@ class TestPerformance:
 # NEW CODE QUALITY AND REFACTORING TESTS
 # ===========================================================================
 
+
 def test_api_docs_available(client):
     """Verify FastAPI auto-generated API docs are accessible."""
     response = client.get("/api/docs")
     assert response.status_code == 200
+
 
 def test_openapi_schema_available(client):
     """Verify OpenAPI JSON schema endpoint is accessible."""
@@ -678,40 +850,48 @@ def test_openapi_schema_available(client):
     assert schema["info"]["title"] == "CarbonCompass"
     assert schema["info"]["version"] == "1.0.0"
 
+
 def test_request_size_limit(client):
     """Verify oversized requests are rejected with 413."""
     large_body = {"message": "x" * 1_100_000, "session_id": "test"}
     response = client.post(
-        "/api/v1/chat",
-        json=large_body,
-        headers={"content-length": "1100000"}
+        "/api/v1/chat", json=large_body, headers={"content-length": "1100000"}
     )
     assert response.status_code in [400, 413, 422]
 
+
 def test_emission_factor_constants_used(client):
     """Verify CO2 calculation uses correct emission factors."""
-    response = client.post("/api/v1/log-activity", json={
-        "session_id": "test-constants-123",
-        "category": "transport",
-        "activity": "metro",
-        "quantity": 10.0,
-        "unit": "km"
-    })
+    response = client.post(
+        "/api/v1/log-activity",
+        json={
+            "session_id": "test-constants-123",
+            "category": "transport",
+            "activity": "metro",
+            "quantity": 10.0,
+            "unit": "km",
+        },
+    )
     assert response.status_code == 200
     data = response.json()
     # metro factor is 0.041 kg/km, so 10km = 0.41 kg
     assert abs(data["co2_kg"] - 0.41) < 0.001
 
+
 def test_unknown_activity_returns_400(client):
     """Verify unknown activity ID returns 400 not 500."""
-    response = client.post("/api/v1/log-activity", json={
-        "session_id": "test-unknown-123",
-        "category": "transport",
-        "activity": "unknown_activity_xyz",
-        "quantity": 5.0,
-        "unit": "km"
-    })
+    response = client.post(
+        "/api/v1/log-activity",
+        json={
+            "session_id": "test-unknown-123",
+            "category": "transport",
+            "activity": "unknown_activity_xyz",
+            "quantity": 5.0,
+            "unit": "km",
+        },
+    )
     assert response.status_code == 400
+
 
 def test_all_endpoints_have_request_id_header(client):
     """Verify every endpoint returns X-Request-ID header."""
@@ -726,8 +906,10 @@ def test_all_endpoints_have_request_id_header(client):
     ]
     for method, path in endpoints:
         response = client.get(path)
-        assert "x-request-id" in response.headers, \
-            f"X-Request-ID missing from {method} {path}"
+        assert (
+            "x-request-id" in response.headers
+        ), f"X-Request-ID missing from {method} {path}"
+
 
 def test_chat_response_matches_model(client, sample_chat_request):
     """Verify chat response has exactly the fields in ChatResponse model."""
@@ -741,20 +923,109 @@ def test_chat_response_matches_model(client, sample_chat_request):
     assert isinstance(data["points_earned"], int)
     assert data["points_earned"] >= 0
 
+
 def test_level_progression(client):
     """Verify gamification levels progress correctly with points."""
     # Log enough activities to accumulate points and verify level changes
     session_id = "test-level-progression-456"
     total_points = 0
     for i in range(15):
-        response = client.post("/api/v1/log-activity", json={
-            "session_id": session_id,
-            "category": "green_actions",
-            "activity": "tree_planted",
-            "quantity": 1.0,
-            "unit": "tree"
-        })
+        response = client.post(
+            "/api/v1/log-activity",
+            json={
+                "session_id": session_id,
+                "category": "green_actions",
+                "activity": "tree_planted",
+                "quantity": 1.0,
+                "unit": "tree",
+            },
+        )
         assert response.status_code == 200
         total_points = response.json()["total_points"]
     assert total_points > 0
 
+
+# ===========================================================================
+# NEW REFACTORED STRUCTURE TESTS
+# ===========================================================================
+
+
+def test_calculator_module_imported():
+    """Verify app.calculator imports successfully."""
+    from app import calculator
+
+    assert calculator is not None
+
+
+def test_config_module_imported():
+    """Verify app.config imports successfully."""
+    from app import config
+
+    assert config is not None
+
+
+def test_gamification_module_imported():
+    """Verify app.gamification imports successfully."""
+    from app import gamification
+
+    assert gamification is not None
+
+
+def test_calculate_co2_direct():
+    """Call calculate_co2('metro', 10) directly and assert correct emissions."""
+    result = calculate_co2("metro", 10)
+    assert result == 0.41
+
+
+def test_get_user_level_seed():
+    """Verify point total 0 maps to Seed level."""
+    assert get_user_level(0) == "Seed"
+
+
+def test_get_user_level_sapling():
+    """Verify point total 150 maps to Sapling level."""
+    assert get_user_level(150) == "Sapling"
+
+
+def test_get_user_level_planet_protector():
+    """Verify point total 1000 maps to Planet Protector level."""
+    assert get_user_level(1000) == "Planet Protector"
+
+
+def test_settings_loaded():
+    """Verify Settings loads correct APP_NAME."""
+    assert get_settings().APP_NAME == "CarbonCompass"
+
+
+def test_all_modules_have_docstrings():
+    """Import each application module and check for module-level docstring."""
+    import app.cache
+    import app.calculator
+    import app.config
+    import app.constants
+    import app.gamification
+    import app.logging_setup
+    import app.models
+    import app.security
+    import app.state
+    import main
+
+    modules = [
+        main,
+        app.config,
+        app.constants,
+        app.models,
+        app.state,
+        app.security,
+        app.cache,
+        app.calculator,
+        app.gamification,
+        app.logging_setup,
+    ]
+    for module in modules:
+        assert (
+            module.__doc__ is not None
+        ), f"Module {module.__name__} is missing a docstring."
+        assert (
+            len(module.__doc__.strip()) > 0
+        ), f"Module {module.__name__} has an empty docstring."
