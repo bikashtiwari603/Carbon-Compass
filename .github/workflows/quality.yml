@@ -1,0 +1,38 @@
+name: Code Quality CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  quality:
+    name: Code Quality Check
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run pytest
+      run: pytest test_main.py -v --tb=short
+
+    - name: Run flake8
+      run: flake8 app/ main.py
+
+    - name: Run pylint
+      run: pylint app/ main.py
+
+    - name: Run mypy
+      run: mypy app/ main.py
