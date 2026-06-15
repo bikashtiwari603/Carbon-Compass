@@ -4,7 +4,15 @@ google-generativeai>=0.8.3
 google-cloud-logging==3.11.3
 
 pydantic==2.9.2
+pydantic-settings==2.14.1
 python-dotenv==1.0.1
 httpx==0.27.2
 pytest==8.3.3
 pytest-asyncio==0.24.0
+
+# Code quality and validation tools
+black==24.4.2
+isort==5.13.2
+pylint==3.2.2
+flake8==7.0.0
+mypy==1.10.0
