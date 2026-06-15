@@ -371,7 +371,10 @@ TIPS_DATA: Dict[str, Any] = {
         {
             "id": 1,
             "category": "transport",
-            "tip": "Take the metro instead of driving today — saves 0.8kg CO2 for a 5km trip",
+            "tip": (
+                "Take the metro instead of driving today "
+                "— saves 0.8kg CO2 for a 5km trip"
+            ),
             "impact": "Low",
             "savings_co2_kg": 0.8,
             "icon": "🚇",
@@ -379,7 +382,10 @@ TIPS_DATA: Dict[str, Any] = {
         {
             "id": 2,
             "category": "food",
-            "tip": "Try one plant-based meal today — even one meatless meal saves 1.5kg CO2",
+            "tip": (
+                "Try one plant-based meal today "
+                "— even one meatless meal saves 1.5kg CO2"
+            ),
             "impact": "Medium",
             "savings_co2_kg": 1.5,
             "icon": "🥗",
@@ -387,7 +393,10 @@ TIPS_DATA: Dict[str, Any] = {
         {
             "id": 3,
             "category": "home",
-            "tip": "Switch off lights and fans when leaving a room — saves up to 0.5kWh daily",
+            "tip": (
+                "Switch off lights and fans when leaving a room "
+                "— saves up to 0.5kWh daily"
+            ),
             "impact": "Low",
             "savings_co2_kg": 0.4,
             "icon": "💡",
@@ -395,7 +404,10 @@ TIPS_DATA: Dict[str, Any] = {
         {
             "id": 4,
             "category": "shopping",
-            "tip": "Carry a reusable bag today — plastic bags take 500 years to decompose",
+            "tip": (
+                "Carry a reusable bag today "
+                "— plastic bags take 500 years to decompose"
+            ),
             "impact": "Low",
             "savings_co2_kg": 0.1,
             "icon": "🛍️",
@@ -403,7 +415,10 @@ TIPS_DATA: Dict[str, Any] = {
         {
             "id": 5,
             "category": "green",
-            "tip": "Start a small compost bin — diverts food waste from landfill producing methane",
+            "tip": (
+                "Start a small compost bin "
+                "— diverts food waste from landfill producing methane"
+            ),
             "impact": "Medium",
             "savings_co2_kg": 0.5,
             "icon": "🌿",

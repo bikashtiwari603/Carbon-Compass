@@ -118,7 +118,10 @@ async def get_facts(request: Request) -> Response:
             "An average tree absorbs about 21 kg of CO2 per year.",
             "The average carbon footprint of a person in India is 1.9 tonnes per year.",
             "The global average carbon footprint is 4.8 tonnes per year.",
-            "Choosing public transport over driving can save up to 2.5 kg of CO2 per trip.",
+            (
+                "Choosing public transport over driving can save up to "
+                "2.5 kg of CO2 per trip."
+            ),
         ]
     }
 

@@ -322,10 +322,22 @@ async def weekly_report(session_id: str, request: Request) -> Dict[str, Any]:
         sorted_cats = sorted(cat_totals.items(), key=lambda x: x[1], reverse=True)
         improvement_tips = []
         tip_map = {
-            "transport": "Try using public transport or cycling for short trips to cut transport emissions.",
-            "food": "Consider one more plant-based meal per day to reduce food-related CO2.",
-            "home": "Audit your electricity usage — switch to 5-star appliances and LED lighting.",
-            "shopping": "Buy fewer new items and consider second-hand or refurbished products.",
+            "transport": (
+                "Try using public transport or cycling for short trips "
+                "to cut transport emissions."
+            ),
+            "food": (
+                "Consider one more plant-based meal per day "
+                "to reduce food-related CO2."
+            ),
+            "home": (
+                "Audit your electricity usage — switch to 5-star "
+                "appliances and LED lighting."
+            ),
+            "shopping": (
+                "Buy fewer new items and consider second-hand "
+                "or refurbished products."
+            ),
         }
         for cat, _ in sorted_cats[:3]:
             improvement_tips.append(

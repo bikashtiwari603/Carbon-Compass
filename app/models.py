@@ -23,23 +23,33 @@ class ChatRequest(BaseModel):
         ...,
         min_length=1,
         max_length=2000,
-        description="The chat message text submitted by the user. Must be between 1 and 2000 characters.",
+        description=(
+            "The chat message text submitted by the user. "
+            "Must be between 1 and 2000 characters."
+        ),
     )
     session_id: str = Field(
         ...,
         min_length=1,
         max_length=100,
-        description="The alphanumeric session identifier (letters, digits, underscores, dashes).",
+        description=(
+            "The alphanumeric session identifier "
+            "(letters, digits, underscores, dashes)."
+        ),
     )
     mode: str = Field(
         default="general",
-        description="Optional mode setting to alter the assistant's behavior (e.g. general, quiz, calculator).",
+        description=(
+            "Optional mode setting to alter the assistant's "
+            "behavior (e.g. general, quiz, calculator)."
+        ),
     )
 
     @field_validator("session_id")
     @classmethod
     def validate_session(cls, val: str) -> str:
-        """Validate that session ID contains only alphanumeric characters, dashes, and underscores.
+        """Validate that session ID contains only alphanumeric characters,
+        dashes, and underscores.
 
         Args:
             val (str): The session ID input.
@@ -73,19 +83,31 @@ class ActivityRequest(BaseModel):
     )
     category: str = Field(
         ...,
-        description="The category of the activity (e.g. transport, home, food, shopping, green_actions).",
+        description=(
+            "The category of the activity "
+            "(e.g. transport, home, food, shopping, green_actions)."
+        ),
     )
     activity: str = Field(
         ...,
-        description="The specific activity identifier (e.g. metro, electricity, tree_planted).",
+        description=(
+            "The specific activity identifier "
+            "(e.g. metro, electricity, tree_planted)."
+        ),
     )
     quantity: float = Field(
         ...,
-        description="The numeric amount of the activity logged. Must be a positive value.",
+        description=(
+            "The numeric amount of the activity logged. "
+            "Must be a positive value."
+        ),
     )
     unit: str = Field(
         ...,
-        description="The unit of measurement corresponding to the activity type (e.g. km, kWh, kg).",
+        description=(
+            "The unit of measurement corresponding to "
+            "the activity type (e.g. km, kWh, kg)."
+        ),
     )
 
     @field_validator("session_id")
@@ -195,12 +217,18 @@ class ChatResponse(BaseModel):
         ...,
         min_length=3,
         max_length=3,
-        description="Exactly three suggested follow-up questions for the conversation flow.",
+        description=(
+            "Exactly three suggested follow-up questions "
+            "for the conversation flow."
+        ),
     )
     points_earned: int = Field(
         ...,
         ge=0,
-        description="Green points awarded for interacting or adopting green keywords.",
+        description=(
+            "Green points awarded for interacting or "
+            "adopting green keywords."
+        ),
     )
     session_id: str = Field(
         ...,
@@ -212,7 +240,8 @@ class ActivityLogResponse(BaseModel):
     """Response schema returned after logging an activity.
 
     Attributes:
-        co2_kg (float): Total carbon emissions/offsets calculated (negative for offsets).
+        co2_kg (float): Total carbon emissions/offsets calculated
+            (negative for offsets).
         points_earned (int): Green points awarded for this activity logging.
         total_points (int): Cumulative green points for this session.
         message (str): Readable status message confirming the activity action.
@@ -221,7 +250,10 @@ class ActivityLogResponse(BaseModel):
 
     co2_kg: float = Field(
         ...,
-        description="Carbon dioxide equivalent in kilograms (negative value denotes offsets/green actions).",
+        description=(
+            "Carbon dioxide equivalent in kilograms "
+            "(negative value denotes offsets/green actions)."
+        ),
     )
     points_earned: int = Field(
         ...,
@@ -313,7 +345,8 @@ class ProfileResponse(BaseModel):
     """Response schema for the user footprint profile setup.
 
     Attributes:
-        estimated_annual_co2_tonnes (float): Estimated annual carbon footprint in tonnes.
+        estimated_annual_co2_tonnes (float): Estimated annual carbon footprint
+            in tonnes.
         vs_india_average (str): Footprint comparison against India's average.
         vs_global_average (str): Footprint comparison against global average.
         top_reduction_opportunity (str): Personalized high-impact reduction advice.
@@ -321,7 +354,9 @@ class ProfileResponse(BaseModel):
 
     estimated_annual_co2_tonnes: float = Field(
         ...,
-        description="Estimated annual footprint in tonnes of carbon dioxide.",
+        description=(
+            "Estimated annual footprint in tonnes of carbon dioxide."
+        ),
     )
     vs_india_average: str = Field(
         ...,
@@ -333,5 +368,8 @@ class ProfileResponse(BaseModel):
     )
     top_reduction_opportunity: str = Field(
         ...,
-        description="The recommended highest-priority lifestyle change to lower footprint.",
+        description=(
+            "The recommended highest-priority lifestyle "
+            "change to lower footprint."
+        ),
     )

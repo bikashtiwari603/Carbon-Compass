@@ -37,7 +37,9 @@ except Exception:
     except Exception:
         _gemini_model = genai.GenerativeModel("gemini-pro")
 
-GEMINI_SYSTEM_PROMPT = """You are CarbonCompass AI, a friendly expert sustainability assistant with the mission Navigate Towards a Greener Future. You help individuals understand track and reduce their carbon footprint.
+GEMINI_SYSTEM_PROMPT = """You are CarbonCompass AI, a friendly expert \
+sustainability assistant with the mission Navigate Towards a Greener Future. \
+You help individuals understand track and reduce their carbon footprint.
 
 You specialize in:
 1. Carbon Footprint Calculation
@@ -186,9 +188,15 @@ async def chat(req: ChatRequest, request: Request) -> Dict[str, Any]:
 
     mode_hint = ""
     if req.mode == "quiz":
-        mode_hint = "\n[MODE: QUIZ — Ask the user one carbon literacy question and evaluate their answer.]"
+        mode_hint = (
+            "\n[MODE: QUIZ — Ask the user one carbon literacy question "
+            "and evaluate their answer.]"
+        )
     elif req.mode == "calculator":
-        mode_hint = "\n[MODE: CALCULATOR — Guide the user step-by-step through calculating their carbon footprint.]"
+        mode_hint = (
+            "\n[MODE: CALCULATOR — Guide the user step-by-step through "
+            "calculating their carbon footprint.]"
+        )
     elif req.mode == "tips":
         mode_hint = "\n[MODE: TIPS — Provide actionable personalized eco-tips.]"
 

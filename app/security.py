@@ -41,7 +41,8 @@ def sanitize_input(text: str) -> str:
         str: The sanitized text.
 
     Raises:
-        HTTPException: If the input contains null bytes or excessive repeated characters.
+        HTTPException: If the input contains null bytes or
+            excessive repeated characters.
     """
     # Remove script tags and content
     text = re.sub(r"<script[\s\S]*?>[\s\S]*?</script>", "", text, flags=re.IGNORECASE)
@@ -153,8 +154,10 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         )
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://www.googletagmanager.com; "
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; "
+            "script-src 'self' 'unsafe-inline' "
+            "https://fonts.googleapis.com https://www.googletagmanager.com; "
+            "style-src 'self' 'unsafe-inline' "
+            "https://fonts.googleapis.com https://fonts.gstatic.com; "
             "font-src https://fonts.gstatic.com; "
             "connect-src 'self'; "
             "img-src 'self' data:;"
@@ -198,11 +201,13 @@ class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
             return JSONResponse(
                 status_code=413,
                 content={
-                    "detail": f"Request body too large. Maximum size: {self.max_size} bytes."
+                    "detail": (
+                        "Request body too large. "
+                        f"Maximum size: {self.max_size} bytes."
+                    )
                 },
             )
         return cast(Response, await call_next(request))
-
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
@@ -231,9 +236,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         return cast(Response, await call_next(request))
 
 
-
 class RequestIdMiddleware(BaseHTTPMiddleware):
-    """Middleware that injects a unique X-Request-ID into each request state and response header."""
+    """Middleware that injects a unique X-Request-ID.
+
+    Appended to each request state and response header.
+    """
 
     async def dispatch(self, request: Request, call_next: Any) -> Response:
         """Assign correlation ID, log entry, and forward downstream.

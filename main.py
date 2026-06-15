@@ -16,7 +16,7 @@ from app.security import (
     RequestSizeLimitMiddleware,
     SecurityHeadersMiddleware,
 )
-from app.state import rate_limit_store  # pylint: disable=unused-import
+from app.state import rate_limit_store  # noqa: F401, pylint: disable=unused-import
 
 settings = get_settings()
 logger = setup_logging()
@@ -33,7 +33,7 @@ Built for **PromptWars Challenge 3** by Hack2skill x GDG.
 ### Core Features
 * **AI Chat** — Google Gemini powered personalized carbon advice
 * **Activity Tracker** — 20+ activities with validated CO2 factors
-* **Gamification** — Points, 9 badges, and 5 progression levels  
+* **Gamification** — Points, 9 badges, and 5 progression levels
 * **Reduction Roadmap** — 6 structured phases to net zero
 * **Carbon Quiz** — 30 questions across 5 topic categories
 * **Weekly Reports** — AI-generated trend analysis and tips
@@ -48,7 +48,7 @@ Built for **PromptWars Challenge 3** by Hack2skill x GDG.
 | Google Secret Manager | Secure key management |
 
 ### India Context
-Average Indian footprint: **1.9T CO2/year** 
+Average Indian footprint: **1.9T CO2/year**
 (vs global average 4.8T — already under Paris target of 2T)
 
 ### Rate Limits

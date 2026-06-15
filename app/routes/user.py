@@ -190,17 +190,20 @@ async def about(request: Request) -> Dict[str, Any]:
         "github": "https://github.com/bikashtiwari603/Carbon-Compass",
         "deployment_region": "us-central1",
         "mission": (
-            "Empower every individual to understand measure and reduce their carbon footprint "
-            "through AI-powered personalized insights and gamified eco-actions"
+            "Empower every individual to understand measure and reduce "
+            "their carbon footprint through AI-powered personalized "
+            "insights and gamified eco-actions"
         ),
         "problem_solved": (
-            "Most individuals have no idea what their carbon footprint is or how their daily "
-            "choices contribute to climate change. CarbonCompass bridges this awareness gap "
-            "with simple tracking personalized AI guidance and actionable reduction roadmaps"
+            "Most individuals have no idea what their carbon footprint "
+            "is or how their daily choices contribute to climate change. "
+            "CarbonCompass bridges this awareness gap with simple "
+            "tracking personalized AI guidance and actionable "
+            "reduction roadmaps"
         ),
         "target_audience": (
-            "Climate-conscious individuals students professionals families anyone wanting "
-            "to reduce environmental impact"
+            "Climate-conscious individuals students professionals "
+            "families anyone wanting to reduce environmental impact"
         ),
         "impact_metrics": {
             "activity_categories": 5,

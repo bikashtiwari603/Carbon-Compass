@@ -59,7 +59,6 @@ def get_session_stats() -> dict:
     return current_stats
 
 
-
 def increment_stat(stat_name: str, amount: int = 1) -> None:
     """Increment a specific application statistic counter.
 
